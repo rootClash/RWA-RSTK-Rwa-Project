@@ -1,4 +1,5 @@
 const fs = require("fs");
+require("@chainlink/env-enc").config(); // unlock the secrets first
 const { Location, ReturnType, CodeLanguage } = require("@chainlink/functions-toolkit");
 
 const requireConfig = {
