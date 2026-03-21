@@ -67,7 +67,7 @@ contract PriceOracleForkTest is Test {
         s_priceOracle.handleOracleFulfillment(latestRequestId, abi.encode(bytes32(uint256(200))), "");
         vm.stopPrank();
         vm.prank(alice);
-        uint256 price = s_priceOracle.getPrice(latestRequestId);
+        uint256 price = s_priceOracle.getPrice();
         console.log("Price for the latest request ID:", price);
         console.logBytes32(latestRequestId);
         assertTrue(

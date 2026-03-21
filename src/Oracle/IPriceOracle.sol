@@ -14,6 +14,6 @@ interface IPriceOracle {
         address router;
         address accessControlAddress;
     }
-    function getPrice(bytes32 requestId) external view returns (uint256);
-    function setPrice(uint256 newPrice,bytes32 requestId) external;
+    function getPrice() external view returns (uint256);
+    function setPrice(uint256 newPrice) external;
 }

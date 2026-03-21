@@ -30,16 +30,18 @@ contract PriceOracle is FunctionsClient, ConfirmedOwner, IPriceOracle {
     /*//////////////////////////////////////////////////////////////
                                 STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
-    mapping(bytes32 => PriceData) private s_priceData;
-    string private i_source;
-    uint8 private i_donHostedSecretsSlotID;
-    uint64 private i_donHostedSecretsVersion;
-    string[] private i_args;
-    bytes[] private i_bytesArgs;
-    uint64 private i_subscriptionId;
-    uint32 private i_gasLimit;
-    bytes32 private i_donID;
+    PriceData public s_priceData;
+    // mapping(bytes32 => PriceData) private s_priceData;
+    string private s_source;
+    string[] private s_args;
+    bytes[] private s_bytesArgs;
     bytes32 private s_latestRequestId;
+
+    uint8 immutable i_donHostedSecretsSlotID;
+    uint64 immutable i_donHostedSecretsVersion;
+    uint64 immutable i_subscriptionId;
+    uint32 immutable i_gasLimit;
+    bytes32 immutable i_donID;
     /*//////////////////////////////////////////////////////////////
                                     EVENT
         //////////////////////////////////////////////////////////////*/
@@ -54,7 +56,7 @@ contract PriceOracle is FunctionsClient, ConfirmedOwner, IPriceOracle {
                                     ERROR
         //////////////////////////////////////////////////////////////*/
     error PriceOracle__RequestIdNotFound();
-    error PriceOracle__RequestIdAlreadyExists();
+    error PriceOracle__HeartbeatNotReached();
 
     /*//////////////////////////////////////////////////////////////
                                     MODIFIERS
@@ -74,39 +76,41 @@ contract PriceOracle is FunctionsClient, ConfirmedOwner, IPriceOracle {
         RequestData memory requestData
     ) FunctionsClient(requestData.router) ConfirmedOwner(confirmedOwner) {
         i_accessControl = IRWAAccessControl(requestData.accessControlAddress);
-        i_source = requestData.source;
+        s_source = requestData.source;
         i_donHostedSecretsSlotID = requestData.donHostedSecretsSlotID;
         i_donHostedSecretsVersion = requestData.donHostedSecretsVersion;
-        i_args = requestData.args;
-        i_bytesArgs = requestData.bytesArgs;
+        s_args = requestData.args;
+        s_bytesArgs = requestData.bytesArgs;
         i_subscriptionId = requestData.subscriptionId;
         i_gasLimit = requestData.gasLimit;
         i_donID = requestData.donID;
-    }
+    }                
 
     // automate : can be automated but can be used by Kyc Agent
     function setPrice(
-        uint256 newPrice,
-        bytes32 requestId
+        uint256 newPrice
     ) external onlyKycAgent {
-        if (s_priceData[requestId].timestamp != 0) {
-            revert PriceOracle__RequestIdAlreadyExists();
+        if(block.timestamp - s_priceData.timestamp < 3600){
+            revert PriceOracle__HeartbeatNotReached();
         }
-        s_priceData[requestId].price = newPrice * 10 ** 8;
-        s_priceData[requestId].timestamp = block.timestamp;
+        uint256 scaledPrice = newPrice * 10 ** 8;
+        s_priceData = PriceData({
+            price: scaledPrice,
+            timestamp: block.timestamp
+        });
         emit PriceUpdated(newPrice, block.timestamp);
     }
 
     // Alpaca : update the struct with the response from the oracle
     function sendRequest() external onlyKycAgent returns (bytes32 requestId) {
         FunctionsRequest.Request memory req;
-        req.initializeRequestForInlineJavaScript(i_source);
+        req.initializeRequestForInlineJavaScript(s_source);
         req.addDONHostedSecrets(
             i_donHostedSecretsSlotID,
             i_donHostedSecretsVersion
         );
-        if (i_args.length > 0) req.setArgs(i_args);
-        if (i_bytesArgs.length > 0) req.setBytesArgs(i_bytesArgs);
+        if (s_args.length > 0) req.setArgs(s_args);
+        if (s_bytesArgs.length > 0) req.setBytesArgs(s_bytesArgs);
         requestId = _sendRequest(
             req.encodeCBOR(),
             i_subscriptionId,
@@ -130,7 +134,7 @@ contract PriceOracle is FunctionsClient, ConfirmedOwner, IPriceOracle {
             );
         }
         uint256 price = abi.decode(response, (uint256));
-        s_priceData[requestId] = PriceData({
+        s_priceData = PriceData({
             price: price,
             timestamp: block.timestamp
         });
@@ -141,11 +145,9 @@ contract PriceOracle is FunctionsClient, ConfirmedOwner, IPriceOracle {
         return s_latestRequestId;
     }
 
-    function getPrice(bytes32 requestId) external view returns (uint256) {
-        return s_priceData[requestId].price;
+    function getPrice() external view returns (uint256) {
+        return s_priceData.price;
     }
 
-    function getFullFilRequest() public {
-        
-    }
+    function getFullFilRequest() public {}
 }

@@ -28,16 +28,16 @@ contract PriceOracleTest is Test {
     //////////////////////////////////////////////////////////////*/
     function testSetPrice() public {
         uint256 expectedPrice = 100;
-        bytes32 requestId = keccak256(abi.encodePacked("testRequestId"));
         vm.prank(address(admin));
         s_accessControl.grantKYCAgentRole(alice);
 
         vm.startPrank(alice);
+        vm.warp(3600);
         vm.expectEmit(false, false, false, true, address(s_priceOracle));
         emit PriceOracle.PriceUpdated(expectedPrice, block.timestamp);
-        s_priceOracle.setPrice(expectedPrice, requestId);
+        s_priceOracle.setPrice(expectedPrice);
         vm.stopPrank();
-        uint256 actualPrice = s_priceOracle.getPrice(requestId);
+        uint256 actualPrice = s_priceOracle.getPrice();
         assertEq(
             expectedPrice * 10 ** 8,
             actualPrice,
@@ -51,14 +51,15 @@ contract PriceOracleTest is Test {
         vm.prank(address(admin));
         s_accessControl.grantKYCAgentRole(alice);
 
+        vm.warp(3600);
         vm.prank(alice);
-        s_priceOracle.setPrice(expectedPrice, requestId);
+        s_priceOracle.setPrice(expectedPrice);
 
         vm.prank(alice);
         vm.expectRevert(
-            PriceOracle.PriceOracle__RequestIdAlreadyExists.selector
+            PriceOracle.PriceOracle__HeartbeatNotReached.selector
         );
-        s_priceOracle.setPrice(expectedPrice, requestId);
+        s_priceOracle.setPrice(expectedPrice);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -74,9 +75,9 @@ contract PriceOracleTest is Test {
         bytes32 requestId = s_priceOracle.getLatestRequestId();
         console.log(
             "The current Price is : ",
-            s_priceOracle.getPrice(requestId)
+            s_priceOracle.getPrice()
         );
-        assertEq(s_priceOracle.getPrice(requestId), 0);
+        assertEq(s_priceOracle.getPrice(), 0);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -106,7 +107,7 @@ contract PriceOracleTest is Test {
         vm.prank(_router);
         s_priceOracle.handleOracleFulfillment(requestId, response, err);
 
-        assertEq(s_priceOracle.getPrice(requestId), simulatedPrice);
+        assertEq(s_priceOracle.getPrice(), simulatedPrice);
     }
 
     function testFulfillRequestRevertsOnWrongRequestId() public {
@@ -150,11 +151,10 @@ contract PriceOracleTest is Test {
     //////////////////////////////////////////////////////////////*/
     function testSetPriceRevertsIfNotAuthorized() public {
         uint256 expectedPrice = 100;
-        bytes32 requestId = keccak256(abi.encodePacked("testRequestId"));
         address bob = makeAddr("bob");
         vm.prank(bob);
         vm.expectRevert();
-        s_priceOracle.setPrice(expectedPrice, requestId);
+        s_priceOracle.setPrice(expectedPrice);
     }
 
     function testSendRequestRevertsIfNotAuthorized() public {
@@ -169,8 +169,7 @@ contract PriceOracleTest is Test {
                             GETTERS
     //////////////////////////////////////////////////////////////*/
     function testGetPriceForNonExistentRequest() view public {
-        bytes32 requestId = keccak256(abi.encodePacked("nonExistent"));
-        uint256 price = s_priceOracle.getPrice(requestId);
+        uint256 price = s_priceOracle.getPrice();
         assertEq(price, 0, "Price should be 0 for a non-existent request ID.");
     }
 
