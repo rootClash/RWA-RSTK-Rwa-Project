@@ -6,10 +6,6 @@ interface IContractStruct {
         CLOSED,
         OPEN
     }
-    enum userRequest {
-        MINT,
-        BURN
-    }
     enum RequestType {
         PORTFOLIO,
         MINT,
@@ -22,15 +18,20 @@ interface IContractStruct {
     }
 
     struct Depositor {
-        uint256 amountDeposited;
         uint256 priceId;
+        uint256 amountDeposited;
+        uint256 collateralPaid;
         address depositorAddress;
+        bool fullfilled;
+        RequestType requestType;
     }
 
     struct Redeemer {
-        uint256 amountToTokenBurned;
         uint256 priceId;
+        uint256 amountToTokenBurned;
+        uint256 minCollateralExpected;
         address user;
+        bool fullfilled;
         RequestType requestType;
     }
 

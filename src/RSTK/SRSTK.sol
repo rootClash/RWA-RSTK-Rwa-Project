@@ -25,12 +25,15 @@ contract SRSTK is FunctionsClient, ConfirmedOwner, IContractStruct {
     uint256 private s_priceIdCounter = 1;
     uint256 private s_totalContractBalance;
     uint256 private s_totalUserBalance;
-    address[] private s_totalUsers;
-    mapping(bytes32 => IContractStruct.Depositor) private s_depositorData; // independent 1
-    mapping(bytes32 => IContractStruct.Redeemer) private s_redeemerData; // independent 2
-    mapping(address => mapping(uint8 => bytes32)) private s_userUniqueId;
+    uint256[] private s_totalDepositors;
+    uint256[] private s_totalBurners;
+    mapping(address => uint256[]) private s_depositorData;
+    mapping(uint256 => IContractStruct.Depositor) private s_depositStruct;
+    mapping(address => uint256[]) private s_redeemerData; 
+    mapping(uint256 => IContractStruct.Redeemer) private s_redmerStruct;
     mapping(bytes32 => IContractStruct.RequestType) private s_requestType;
     mapping(IContractStruct.RequestType => IContractStruct.RequestConfig) private s_request;
+
     uint64 immutable i_subscriptionId;
     bytes32 immutable i_donId;
     uint32 immutable i_gasLimit;
@@ -44,7 +47,8 @@ contract SRSTK is FunctionsClient, ConfirmedOwner, IContractStruct {
     /*//////////////////////////////////////////////////////////////
                                 EVENT       
     //////////////////////////////////////////////////////////////*/
-    event SRSTK__DepositRequested(bytes32 indexed requestId, address indexed depositor, uint256 amount);
+    event DepositRequested(bytes32 indexed requestId, address indexed depositor, uint256 amount ,uint256 priceId);
+    event PortfolioBalance(uint256 newBalance);
 
     /*//////////////////////////////////////////////////////////////
                                  ERRORS
@@ -52,6 +56,10 @@ contract SRSTK is FunctionsClient, ConfirmedOwner, IContractStruct {
     error SRSTK__AmountCannotBeZero();
     error SRSTK__InvalidRequestType();
     error SRSTK__InsufficientCollateral();
+    error SRSTK__InvalidPriceId();
+    error SRSTK__RequestAlreadyFulfilled();
+    error SRSTK__TransactionNotSuccesed();
+    error SRSTK__InsufficientReserve();
 
     /*//////////////////////////////////////////////////////////////
                                 MODIFIERS
@@ -91,24 +99,47 @@ contract SRSTK is FunctionsClient, ConfirmedOwner, IContractStruct {
         s_depositRequestId = requestId;
         uint256 priceId = s_priceIdCounter++;
         s_totalContractBalance += amount;
-        s_depositorData[s_depositRequestId] = IContractStruct.Depositor({
+        IContractStruct.Depositor memory depositor = IContractStruct.Depositor({
             depositorAddress: msg.sender,
             amountDeposited: amount,
-            priceId: priceId
-        });
-        s_userUniqueId[msg.sender] = requestId;
+            priceId: priceId,
+            fullfilled: false,
+            requestType: IContractStruct.RequestType.MINT
+        });  
+        s_depositorData[msg.sender].push(priceId);
+        s_depositStruct[priceId] = depositor;
         s_requestType[requestId] = IContractStruct.RequestType.MINT;
         s_request[IContractStruct.RequestType.MINT] = config;
-        s_userUniqueId[msg.sender][0] = requestId;
-        IERC20(i_usdcAddress).transferFrom(msg.sender, address(this), amount);
-        emit SRSTK__DepositRequested(requestId, msg.sender, amount);
+
+        bool success = IERC20(i_usdcAddress).transferFrom(msg.sender, address(this), amount);
+        if(!success){
+            revert SRSTK__TransactionNotSuccesed();
+        }
+        emit DepositRequested(requestId, msg.sender, amount, priceId);
         return requestId;
     }
 
     function sendBurnRequest() external {}
 
-    function withdraw() external {}
-
+    function Redeem(uint256 priceId) external {
+        // CEI
+        if(s_depositorData[msg.sender][priceId].priceId == 0){
+            revert SRSTK__InvalidPriceId();
+        }
+        if(s_depositorData[msg.sender][priceId].fullfilled){
+            revert SRSTK__RequestAlreadyFulfilled();
+        }
+        if(s_depositorData[msg.sender][priceId].requestType != IContractStruct.RequestType.MINT){
+            revert SRSTK__InvalidRequestType();
+        }
+        //// check the portFolio balance
+        uint256 portFolioBalance = getPortfolioBalance();
+        if(portFolioBalance < s_depositorData[msg.sender][priceId].amountDeposited){
+            revert SRSTK__InsufficientReserve();
+        }
+        //// check whether the stocks buyed?
+        
+    }
 
     /*//////////////////////////////////////////////////////////////
                              EXTERNAL GETTER
@@ -121,8 +152,12 @@ contract SRSTK is FunctionsClient, ConfirmedOwner, IContractStruct {
         return s_requestType[requestID];
     }
 
-    function getUserRequestID(address user) external view returns  (bytes32){
-        return s_userUniqueId[user];
+    function getUserRequestID(address user) external view returns  (IContractStruct.Depositor[] memory depositorData){
+        depositorData =  s_depositorData[user];
+    }
+
+    function getPortfolioBalance() external view returns(uint256){
+        return s_portfolioBalance;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -173,15 +208,20 @@ contract SRSTK is FunctionsClient, ConfirmedOwner, IContractStruct {
         );
         return requestID;
     }
+
     function setRequestConfig(string calldata source, string[] calldata args, bytes[] calldata bytesArgs) internal returns(IContractStruct.RequestConfig memory config){
         config = IContractStruct.RequestConfig({
-            source : source
+            source : source,
             args: args,
             bytesArgs: bytesArgs
         });
     }
 
-    function _handleFetchPortFolioBalance() internal {}
+    function _handleFetchPortFolioBalance(bytes memory response) internal {
+        uint256 portFolioBalance = abi.decode(response, (uint256));
+        s_portfolioBalance = portFolioBalance;
+        emit PortfolioBalance(portFolioBalance);
+    }
 
     function _handleMintToken() internal {}
 

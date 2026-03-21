@@ -16,3 +16,14 @@
 
 ##### have not used the "Market" struct of IContractStruct.sol = main purpose to get the status of market
 
+### made change in the IContractStruct.sol in Reddeemer and Depositor
+
+## completed the sendMintRequest
+
+## Redeem
+## sendRedeemFunctoion
+
+=> add the js script
+## transaction check nhi kiya esko check kro in sendMintFunction --- ✅
+## start from adding the automation in PortfolioBalance.sol and test it and add the sendRedeemRequest and js also in chainlink function
+
