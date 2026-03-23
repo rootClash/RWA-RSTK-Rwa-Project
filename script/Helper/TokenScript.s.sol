@@ -11,6 +11,16 @@ contract TokenScript is IContractStruct {
             s_networks[block.chainid] = getAnvilInfo();
         }
     }
+    function getNetworkConfig()
+        external
+        view
+        returns (
+            IContractStruct.ExtraInfo memory
+        )
+    {
+        return s_networks[block.chainid];
+    }
+
 
     function getSepoliaInfo() internal pure returns (IContractStruct.ExtraInfo memory extraInfo) {
         extraInfo = ExtraInfo({
@@ -18,7 +28,9 @@ contract TokenScript is IContractStruct {
             precision: 1e18,
             usdc : address(0), /// make sure to change this,
             srstkTokenAddr : address(0), // change this
-            priceOracleAddr : address(0) // change this
+            priceOracleAddr : address(0), // change this
+            owner : address(0),// change this
+            portfolioContractAddr : address(0)
         });
     }
 
@@ -28,7 +40,9 @@ contract TokenScript is IContractStruct {
             precision: 1e18,
             usdc : address(0), /// make sure to change this for anvil,
             srstkTokenAddr : address(0),
-            priceOracleAddr : address(0) // change this for anvil
+            priceOracleAddr : address(0), // change this for anvil
+            owner : address(0),//// change this
+            portfolioContractAddr : address(0) // change this for anvil
         });
     }
 }

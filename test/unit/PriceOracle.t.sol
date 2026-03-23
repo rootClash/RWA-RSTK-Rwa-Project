@@ -5,20 +5,20 @@ import {DeployPriceOracle} from "../../script/DeployPriceOracle.sol";
 import {PriceOracle} from "../../src/Oracle/PriceOracle.sol";
 import {RWAAccessControl} from "../../src/access/RWAAccessControl.sol";
 import {
-    ScriptForPriceOracle
-} from "../../script/Helper/ScriptForPriceOracle.s.sol";
+    HelperScript
+} from "../../script/Helper/HelperScript.s.sol";
 import {IPriceOracle} from "../../src/Oracle/IPriceOracle.sol";
 contract PriceOracleTest is Test {
     PriceOracle public s_priceOracle;
     DeployPriceOracle public s_deployPriceOracle;
     RWAAccessControl public s_accessControl;
-    ScriptForPriceOracle public s_scriptPriceOracle;
+    HelperScript public s_scriptPriceOracle;
     address public admin = address(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266);
     address alice = makeAddr("kyc-role");
-
+    string public constant SOURCE = "./functions/source/source.js";
     function setUp() public {
         s_accessControl = new RWAAccessControl(admin);
-        s_scriptPriceOracle = new ScriptForPriceOracle();
+        s_scriptPriceOracle = new HelperScript(SOURCE);
         s_deployPriceOracle = new DeployPriceOracle();
         s_priceOracle = s_deployPriceOracle.run(address(s_accessControl));
     }

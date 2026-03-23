@@ -27,3 +27,17 @@
 ## transaction check nhi kiya esko check kro in sendMintFunction --- ✅
 ## start from adding the automation in PortfolioBalance.sol and test it and add the sendRedeemRequest and js also in chainlink function
 
+* add the automation in the contract ✅ done
+-> function in script for the  ✅ done
+* test the contract -> kal krunga
+* continue withdraw function 
+* add the js script  🕧
+* test it
+* Request Data se source , args , bytesData hataya hun.
+## track the user balance => collect everything => buy form the market => and distribute to the user who requested
+# test mein 
+Error (7920): Identifier not found or not unique.
+  --> test/unit/SRSTKTest.t.sol:16:9:
+   |
+16 |         IPriceOracle.RequestData memory config= s_scriptPriceOracle.s_config(block.chainid);
+

@@ -7,7 +7,6 @@ interface IContractStruct {
         OPEN
     }
     enum RequestType {
-        PORTFOLIO,
         MINT,
         BURN
     }
@@ -41,6 +40,8 @@ interface IContractStruct {
         address usdc;
         address srstkTokenAddr;
         address priceOracleAddr;
+        address portfolioContractAddr;
+        address owner;
     }
 
     struct RequestConfig {
@@ -48,4 +49,15 @@ interface IContractStruct {
         string[] args;
         bytes[] bytesArgs;
     }
+
+     struct RequestData {
+        uint8 donHostedSecretsSlotID;
+        uint64 donHostedSecretsVersion;
+        uint64 subscriptionId;
+        uint32 gasLimit;
+        bytes32 donID;
+        address router;
+        address accessControlAddress;
+    }
+
 }

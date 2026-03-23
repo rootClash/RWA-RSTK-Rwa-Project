@@ -3,7 +3,6 @@ require("@chainlink/env-enc").config(); // unlock the secrets first
 const { Location, ReturnType, CodeLanguage } = require("@chainlink/functions-toolkit");
 
 const requireConfig = {
-    source: fs.readFileSync("./functions/source/source.js", "utf8"),
     codeLocation: Location.Inline,
     secrets: { alpacaApiKey: process.env.ALPACA_API_KEY, alpacaSecretKey: process.env.ALPACA_SECRET_KEY },
     secretsLocation: Location.DONHosted,

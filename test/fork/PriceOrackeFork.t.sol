@@ -4,8 +4,8 @@ import {Test, console} from "forge-std/Test.sol";
 import {DeployPriceOracle} from "../../script/DeployPriceOracle.sol";
 import {PriceOracle} from "../../src/Oracle/PriceOracle.sol";
 import {
-    ScriptForPriceOracle
-} from "../../script/Helper/ScriptForPriceOracle.s.sol";
+    HelperScript
+} from "../../script/Helper/HelperScript.s.sol";
 import {IPriceOracle} from "../../src/Oracle/IPriceOracle.sol";
 import {IRWAAccessControl} from "../../src/access/IRWAAccessControl.sol";
 import {
@@ -15,7 +15,7 @@ import {
 contract PriceOracleForkTest is Test {
     PriceOracle public s_priceOracle;
     DeployPriceOracle public s_deployPriceOracle;
-    ScriptForPriceOracle public s_scriptPriceOracle;
+    HelperScript public s_scriptPriceOracle;
     address alice = makeAddr("kyc-role");
     uint256 forkID;
     string rpcURL = vm.envString("SEPOLIA_RPC_URL");
@@ -23,21 +23,20 @@ contract PriceOracleForkTest is Test {
     address accessControlAddress;
     address routerAddr;
     uint64 subscriptionId;
-
+    string public constant SOURCE = "./functions/source/sourcePortfolio.js";
     function setUp() public {
         forkID = vm.createSelectFork(rpcURL);
         vm.selectFork(forkID);
-        s_scriptPriceOracle = new ScriptForPriceOracle();
+        s_scriptPriceOracle = new HelperScript(SOURCE);
         s_deployPriceOracle = new DeployPriceOracle();
         s_priceOracle = s_deployPriceOracle.run(address(0));
-        (, // 1 - string source        (dynamic, still counts as slot)
-            , // 2 - uint8  donHostedSecretsSlotID
-            , // 3 - uint64 donHostedSecretsVersion
-            subscriptionId, // 4 - uint64 subscriptionId  ← capture
-            , // 5 - uint32 gasLimit
-            , // 6 - bytes32 donID
-            routerAddr, // 7 - address router         ← capture
-            accessControlAddress // 8 - address accessControlAddress ← capture
+        (, //  - uint8  donHostedSecretsSlotID
+            , //  - uint64 donHostedSecretsVersion
+            subscriptionId, //  - uint64 subscriptionId  ← capture
+            , //  - uint32 gasLimit
+            , //  - bytes32 donID
+            routerAddr, //  - address router         ← capture
+            accessControlAddress // - address accessControlAddress ← capture
         ) = s_scriptPriceOracle.s_networks(block.chainid);
         vm.label(address(s_priceOracle), "PriceOracle");
         vm.label(mainAdmin, "MainAdmin");

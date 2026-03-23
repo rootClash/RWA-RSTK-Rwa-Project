@@ -11,7 +11,7 @@ import {
 } from "@chainlink/contracts/src/v0.8/functions/v1_0_0/libraries/FunctionsRequest.sol";
 import {IRWAAccessControl} from "../access/IRWAAccessControl.sol";
 import {IPriceOracle} from "./IPriceOracle.sol";
-
+import {IContractStruct} from "../RSTK/IContractStruct.sol";
 /// @title PriceOracle
 /// @notice A price oracle that fetches price data from an external source using Chainlink Functions
 /// @dev This contract is designed to be used in a real estate context, where KYC agents can update price data manually, and the contract owner can fetch price data from an external source using Chainlink Functions. The contract uses a mapping to store price data associated with unique request IDs, allowing for multiple price updates and retrievals.
@@ -73,14 +73,15 @@ contract PriceOracle is FunctionsClient, ConfirmedOwner, IPriceOracle {
     //////////////////////////////////////////////////////////////*/
     constructor(
         address confirmedOwner,
-        RequestData memory requestData
+        IContractStruct.RequestData memory requestData,
+        IContractStruct.RequestConfig memory config
     ) FunctionsClient(requestData.router) ConfirmedOwner(confirmedOwner) {
         i_accessControl = IRWAAccessControl(requestData.accessControlAddress);
-        s_source = requestData.source;
+        s_source = config.source;
         i_donHostedSecretsSlotID = requestData.donHostedSecretsSlotID;
         i_donHostedSecretsVersion = requestData.donHostedSecretsVersion;
-        s_args = requestData.args;
-        s_bytesArgs = requestData.bytesArgs;
+        s_args = config.args;
+        s_bytesArgs = config.bytesArgs;
         i_subscriptionId = requestData.subscriptionId;
         i_gasLimit = requestData.gasLimit;
         i_donID = requestData.donID;
