@@ -5,11 +5,11 @@ if (!secrets.alpacaApiKey && !secrets.alpacaSecretKey) {
     );
 }
 
-if (!args || args.length < 1) {
+if (!args || args.length === 0) {
     throw Error("Missing arguments. Expected args[0] for symbol and args[1] for notional.");
 }
 
-const notionalAmount = args[0];
+const quantity = args[0];
 
 const alpacaRequest = Functions.makeHttpRequest({
     url: `https://paper-api.alpaca.markets/v3/clock?markets=NYSE`,
@@ -50,8 +50,8 @@ const alpacaRequestOnBuy = Functions.makeHttpRequest({
         "type": "market",
         "time_in_force": "day",
         "symbol": "RSST",
-        "side": "buy",
-        "notional": notionalAmount
+        "side": "sell",
+        "qty": quantity
     }
 })
 const AlpacaResponseOnBuy = await alpacaRequestOnBuy;

@@ -23,15 +23,16 @@ async function main() {
     );
     console.log("Started Execution...")
     const sourceArg = [
-        // { source: fs.readFileSync("./functions/source/source.js", "utf8") },
-        // { source: fs.readFileSync("./functions/source/sourcePortfolio.js", "utf8") },
-        { source: fs.readFileSync("./functions/source/sourceBuy.js", "utf8") },
+        // { source: fs.readFileSync("./functions/source/source.js", "utf8"), args: [] },
+        // { source: fs.readFileSync("./functions/source/sourcePortfolio.js", "utf8"), args: [] },
+        // { source: fs.readFileSync("./functions/source/sourceBuy.js", "utf8"), args: ["56.84"] },
+        { source: fs.readFileSync("./functions/source/sourceSell.js", "utf8"), args: ["1"] },
     ]
 
-    const SimulationParameter = sourceArg.map(source =>
+    const SimulationParameter = sourceArg.map(item =>
         simulateScript({
-            source: source.source,
-            args: requestConfig.args,
+            source: item.source,
+            args: item.args || requestConfig.args,
             secrets: requestConfig.secrets
         }))
     const results = await Promise.all(SimulationParameter);
