@@ -134,9 +134,6 @@ contract PortfolioBalance is FunctionsClient, ConfirmedOwner {
             revert PortfolioBalance__UpkeepNotNeeded();
         }
         bytes32 requestId = sendRequest();
-        if (requestId == s_latestRequestId) {
-            revert PortfolioBalance__RequestIdAlreadyExist();
-        }
         s_latestRequestId = requestId;
     }
 
