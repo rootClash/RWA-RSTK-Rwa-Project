@@ -7,21 +7,22 @@ import {
     HelperScript
 } from "../script/Helper/HelperScript.s.sol";
 import {IContractStruct} from "../src/RSTK/IContractStruct.sol";
+import {mockRouter} from "../test/mock/mockRouter.sol";
+import {RWAAccessControl} from "../src/access/RWAAccessControl.sol";
 
-contract DeployPortfolio is Script {
+contract DeployPortfolio is Script { 
     PortfolioBalance public s_portfolioBalance;
     HelperScript public s_script;
     string public constant SOURCE = "./functions/source/sourcePortfolio.js";
-    function run() public returns (PortfolioBalance) {
-        vm.startBroadcast();
+    function run(address owner) public returns (PortfolioBalance,HelperScript) {
+        vm.startBroadcast(owner);
         s_script = new HelperScript(SOURCE);
         (
             IContractStruct.RequestData memory network,
             IContractStruct.RequestConfig memory config
         ) = s_script.getNetworkConfig();
-        ///// change the owner address
         s_portfolioBalance = new PortfolioBalance(msg.sender, network, config);
         vm.stopBroadcast();
-        return s_portfolioBalance;
+        return (s_portfolioBalance , s_script);
     }
 }

@@ -3,24 +3,22 @@ pragma solidity ^0.8.19;
 import {Test, console} from "forge-std/Test.sol";
 import {DeployPriceOracle} from "../../script/DeployPriceOracle.sol";
 import {PriceOracle} from "../../src/Oracle/PriceOracle.sol";
-import {RWAAccessControl} from "../../src/access/RWAAccessControl.sol";
-import {
-    HelperScript
-} from "../../script/Helper/HelperScript.s.sol";
+import {IContractStruct} from "../../src/RSTK/IContractStruct.sol";
+import {HelperScript} from "../../script/Helper/HelperScript.s.sol";
 import {IPriceOracle} from "../../src/Oracle/IPriceOracle.sol";
+import {IRWAAccessControl} from "../../src/access/IRWAAccessControl.sol";
+
 contract PriceOracleTest is Test {
     PriceOracle public s_priceOracle;
     DeployPriceOracle public s_deployPriceOracle;
-    RWAAccessControl public s_accessControl;
     HelperScript public s_scriptPriceOracle;
-    address public admin = address(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266);
+    address public admin = address(0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38);
     address alice = makeAddr("kyc-role");
-    string public constant SOURCE = "./functions/source/source.js";
+    IContractStruct.RequestData public network;
     function setUp() public {
-        s_accessControl = new RWAAccessControl(admin);
-        s_scriptPriceOracle = new HelperScript(SOURCE);
         s_deployPriceOracle = new DeployPriceOracle();
-        s_priceOracle = s_deployPriceOracle.run(address(s_accessControl));
+        (s_priceOracle, s_scriptPriceOracle) = s_deployPriceOracle.run(admin);
+        (network, ) = s_scriptPriceOracle.getNetworkConfig();
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -29,7 +27,9 @@ contract PriceOracleTest is Test {
     function testSetPrice() public {
         uint256 expectedPrice = 100;
         vm.prank(address(admin));
-        s_accessControl.grantKYCAgentRole(alice);
+        IRWAAccessControl(network.accessControlAddress).grantKYCAgentRole(
+            alice
+        );
 
         vm.startPrank(alice);
         vm.warp(3600);
@@ -49,16 +49,15 @@ contract PriceOracleTest is Test {
         uint256 expectedPrice = 100;
         bytes32 requestId = keccak256(abi.encodePacked("testRequestId"));
         vm.prank(address(admin));
-        s_accessControl.grantKYCAgentRole(alice);
-
+        IRWAAccessControl(network.accessControlAddress).grantKYCAgentRole(
+            alice
+        );
         vm.warp(3600);
         vm.prank(alice);
         s_priceOracle.setPrice(expectedPrice);
 
         vm.prank(alice);
-        vm.expectRevert(
-            PriceOracle.PriceOracle__HeartbeatNotReached.selector
-        );
+        vm.expectRevert(PriceOracle.PriceOracle__HeartbeatNotReached.selector);
         s_priceOracle.setPrice(expectedPrice);
     }
 
@@ -66,17 +65,16 @@ contract PriceOracleTest is Test {
                         SENDREQUEST
     //////////////////////////////////////////////////////////////*/
     function testSendRequest() public {
-        vm.prank(address(admin));
-        s_accessControl.grantKYCAgentRole(alice);
+        vm.prank(admin);
+        IRWAAccessControl(network.accessControlAddress).grantKYCAgentRole(
+            alice
+        );
 
         vm.prank(alice);
         s_priceOracle.sendRequest();
         console.logBytes32(s_priceOracle.getLatestRequestId());
         bytes32 requestId = s_priceOracle.getLatestRequestId();
-        console.log(
-            "The current Price is : ",
-            s_priceOracle.getPrice()
-        );
+        console.log("The current Price is : ", s_priceOracle.getPrice());
         assertEq(s_priceOracle.getPrice(), 0);
     }
 
@@ -84,19 +82,23 @@ contract PriceOracleTest is Test {
                         FULFILLREQUEST
     //////////////////////////////////////////////////////////////*/
     function testFulfillRequestSuccess() public {
-        vm.prank(address(admin));
-        s_accessControl.grantKYCAgentRole(alice);
+        vm.prank(admin);
+        IRWAAccessControl(network.accessControlAddress).grantKYCAgentRole(
+            alice
+        );
 
-        vm.prank(alice);
+        vm.startPrank(alice);
         s_priceOracle.sendRequest();
         bytes32 requestId = s_priceOracle.getLatestRequestId();
+        vm.stopPrank();
 
         uint256 simulatedPrice = 50000;
         bytes memory response = abi.encode(simulatedPrice);
         bytes memory err = "";
 
-        address _router = address(s_deployPriceOracle.s_mockRouter());
+        address _router = address(network.router);
 
+        vm.startPrank(_router);
         vm.expectEmit(false, false, false, true, address(s_priceOracle));
         emit PriceOracle.PriceFetchedAndUpdated(
             requestId,
@@ -104,15 +106,16 @@ contract PriceOracleTest is Test {
             block.timestamp
         );
 
-        vm.prank(_router);
         s_priceOracle.handleOracleFulfillment(requestId, response, err);
-
+        vm.stopPrank();
         assertEq(s_priceOracle.getPrice(), simulatedPrice);
     }
 
     function testFulfillRequestRevertsOnWrongRequestId() public {
         vm.prank(address(admin));
-        s_accessControl.grantKYCAgentRole(alice);
+        IRWAAccessControl(network.accessControlAddress).grantKYCAgentRole(
+            alice
+        );
 
         vm.prank(alice);
         s_priceOracle.sendRequest();
@@ -120,7 +123,7 @@ contract PriceOracleTest is Test {
         bytes32 wrongRequestId = keccak256(abi.encodePacked("wrongId"));
         bytes memory response = abi.encode(uint256(50000));
         bytes memory err = "";
-        address router = address(s_deployPriceOracle.s_mockRouter());
+        address router = address(network.router);
 
         vm.prank(router);
         vm.expectRevert(PriceOracle.PriceOracle__RequestIdNotFound.selector);
@@ -129,7 +132,9 @@ contract PriceOracleTest is Test {
 
     function testFulfillRequestRevertsOnError() public {
         vm.prank(address(admin));
-        s_accessControl.grantKYCAgentRole(alice);
+        IRWAAccessControl(network.accessControlAddress).grantKYCAgentRole(
+            alice
+        );
 
         vm.prank(alice);
         s_priceOracle.sendRequest();
@@ -137,7 +142,7 @@ contract PriceOracleTest is Test {
 
         bytes memory response = "";
         bytes memory err = "API limit reached";
-        address router = address(s_deployPriceOracle.s_mockRouter());
+        address router = address(network.router);
 
         vm.prank(router);
         vm.expectRevert(
@@ -168,12 +173,12 @@ contract PriceOracleTest is Test {
     /*//////////////////////////////////////////////////////////////
                             GETTERS
     //////////////////////////////////////////////////////////////*/
-    function testGetPriceForNonExistentRequest() view public {
+    function testGetPriceForNonExistentRequest() public view {
         uint256 price = s_priceOracle.getPrice();
         assertEq(price, 0, "Price should be 0 for a non-existent request ID.");
     }
 
-    function testGetLatestRequestIdBeforeAnyRequest() view public {
+    function testGetLatestRequestIdBeforeAnyRequest() public view {
         bytes32 requestId = s_priceOracle.getLatestRequestId();
         assertEq(
             requestId,

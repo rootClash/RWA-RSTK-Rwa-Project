@@ -15,12 +15,14 @@ import {
     AutomationCompatibleInterface
 } from "@chainlink/contracts/src/v0.8/automation/interfaces/AutomationCompatibleInterface.sol";
 import {IContractStruct} from "../RSTK/IContractStruct.sol";
+import {IRWAAccessControl} from "../access/IRWAAccessControl.sol";
 
 contract PortfolioBalance is FunctionsClient, ConfirmedOwner {
     /*//////////////////////////////////////////////////////////////
                             TYPE DECLERATION
     //////////////////////////////////////////////////////////////*/
     using FunctionsRequest for FunctionsRequest.Request;
+    IRWAAccessControl private immutable i_accessControl;
 
     /*//////////////////////////////////////////////////////////////
                              STATE VARIABLE
@@ -47,6 +49,16 @@ contract PortfolioBalance is FunctionsClient, ConfirmedOwner {
     error PortfolioBalance__ErrorFromOracle(bytes err);
     error PortfolioBalance__UpkeepNotNeeded();
     error PortfolioBalance__RequestIdAlreadyExist();
+    /*//////////////////////////////////////////////////////////////
+                                MODIFIERS
+    //////////////////////////////////////////////////////////////*/
+    modifier onlyKycAgent() {
+        require(
+            i_accessControl.isKYCAgentRole(msg.sender),
+            "Caller is not a KYC agent"
+        );
+        _;
+    }
 
     /*//////////////////////////////////////////////////////////////
                                CONSTRUCTOR
@@ -61,6 +73,7 @@ contract PortfolioBalance is FunctionsClient, ConfirmedOwner {
         i_subscriptionId = requestData.subscriptionId;
         i_gasLimit = requestData.gasLimit;
         i_donID = requestData.donID;
+        i_accessControl = IRWAAccessControl(requestData.accessControlAddress);
         s_source = config.source;
         s_args = config.args;
         s_bytesArgs = config.bytesArgs;
@@ -70,7 +83,7 @@ contract PortfolioBalance is FunctionsClient, ConfirmedOwner {
     /*//////////////////////////////////////////////////////////////
                                 FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-    function sendRequest() public returns (bytes32 requestId) {
+    function sendRequest() internal onlyKycAgent returns (bytes32 requestId) {
         FunctionsRequest.Request memory req;
         req.initializeRequestForInlineJavaScript(s_source);
         req.addDONHostedSecrets(
@@ -87,6 +100,7 @@ contract PortfolioBalance is FunctionsClient, ConfirmedOwner {
         );
         s_latestRequestId = requestId;
     }
+
     function fulfillRequest(
         bytes32 requestId,
         bytes memory response,
@@ -126,7 +140,11 @@ contract PortfolioBalance is FunctionsClient, ConfirmedOwner {
         s_latestRequestId = requestId;
     }
 
-    function getbalance() external returns (uint256) {
+    function getbalance() external view returns (uint256) {
         return s_config.portfolioBalance;
+    }
+
+    function getLatestRequestId() external view returns (bytes32) {
+        return s_latestRequestId;
     }
 }

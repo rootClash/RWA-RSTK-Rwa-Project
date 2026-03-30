@@ -3,6 +3,9 @@ pragma solidity ^0.8.19;
 import {Script} from "forge-std/Script.sol";
 import {IContractStruct} from "../../src/RSTK/IContractStruct.sol";
 import {RWAAccessControl} from "../../src/access/RWAAccessControl.sol";
+import {mockRouter} from "../../test/mock/mockRouter.sol";
+import {RWAAccessControl} from "../../src/access/RWAAccessControl.sol";
+
 contract HelperScript is Script {
     RWAAccessControl public s_accessControl;
     error HelperScript__InvalidNetwork();
@@ -63,15 +66,14 @@ contract HelperScript is Script {
 
     function getAnvilConfig()
         public
-        view
         returns (
             IContractStruct.RequestData memory anvilConfig,
             IContractStruct.RequestConfig memory config
         )
     {
         anvilConfig = IContractStruct.RequestData({
-            router: address(0),
-            accessControlAddress: address(0),
+            router: address(new mockRouter()),
+            accessControlAddress: address(new RWAAccessControl(0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38)),
             donHostedSecretsSlotID: 0,
             donHostedSecretsVersion: 0,
             subscriptionId: 1,

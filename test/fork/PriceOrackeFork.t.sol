@@ -27,9 +27,8 @@ contract PriceOracleForkTest is Test {
     function setUp() public {
         forkID = vm.createSelectFork(rpcURL);
         vm.selectFork(forkID);
-        s_scriptPriceOracle = new HelperScript(SOURCE);
         s_deployPriceOracle = new DeployPriceOracle();
-        s_priceOracle = s_deployPriceOracle.run(address(0));
+        (s_priceOracle , s_scriptPriceOracle) = s_deployPriceOracle.run(mainAdmin);
         (, //  - uint8  donHostedSecretsSlotID
             , //  - uint64 donHostedSecretsVersion
             subscriptionId, //  - uint64 subscriptionId  ← capture
