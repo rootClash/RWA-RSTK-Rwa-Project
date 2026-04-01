@@ -19,8 +19,8 @@ contract RSTKToken is ERC20Pausable {
     /*//////////////////////////////////////////////////////////////
                                CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
-    constructor(address RWAAccessControl) ERC20("RSTKToken", "RSTK") {
-        i_accessControl = IRWAAccessControl(RWAAccessControl);
+    constructor(address _rwaAccessControl) ERC20("RSTKToken", "RSTK") {
+        i_accessControl = IRWAAccessControl(_rwaAccessControl);
     }
 
     function mint(address to, uint256 amount) public {
