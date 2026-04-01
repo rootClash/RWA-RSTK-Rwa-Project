@@ -2,8 +2,14 @@
 pragma solidity ^0.8.19;
 
 import {IContractStruct} from "../../src/RSTK/IContractStruct.sol";
+import {MockV3Aggregator} from "@chainlink/contracts/src/v0.8/tests/MockV3Aggregator.sol";
+import {MockERC20} from "@chainlink/contracts/src/v0.8/vendor/forge-std/src/mocks/MockERC20.sol";
+
+
 contract TokenScript is IContractStruct {
     mapping(uint256 => IContractStruct.ExtraInfo) public s_networks;
+    address constant ANVIL_ADMIN = 0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38;
+
     constructor(){
         if(block.chainid == 11155111){
             s_networks[block.chainid] = getSepoliaInfo();
@@ -33,15 +39,17 @@ contract TokenScript is IContractStruct {
             portfolioContractAddr : address(0)
         });
     }
-
-    function getAnvilInfo() internal pure returns (IContractStruct.ExtraInfo memory extraInfo) {
+    /// eska es contract ka jo owner hoga wo tokenScriphoga
+    function getAnvilInfo() internal returns (IContractStruct.ExtraInfo memory extraInfo) {
+        MockERC20 mockERC20 = new MockERC20();
+        mockERC20.initialize("USDC", "USDC", 6);
         extraInfo = ExtraInfo({
-            aggregator: address(0),
+            aggregator: address(new MockV3Aggregator(8, 1e8)),
             precision: 1e18,
-            usdc : address(0), /// make sure to change this for anvil,
+            usdc : address(mockERC20), /// make sure to change this for anvil,
             srstkTokenAddr : address(0),
             priceOracleAddr : address(0), // change this for anvil
-            owner : address(0),//// change this
+            owner : ANVIL_ADMIN,
             portfolioContractAddr : address(0) // change this for anvil
         });
     }
