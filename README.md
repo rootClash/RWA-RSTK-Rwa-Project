@@ -40,4 +40,12 @@ Error (7920): Identifier not found or not unique.
   --> test/unit/SRSTKTest.t.sol:16:9:
    |
 16 |         IPriceOracle.RequestData memory config= s_scriptPriceOracle.s_config(block.chainid);
+### solved the above error
+* started working on the main contract 
 
+bhai dur nhi hun apne Abhi tk ka main Project se
+# error : non contract address issue ....
+solved this porblem 😄 
+# error : encountered another problem ....
+[FAIL: SRSTK__InsufficientCollateral()] test_sendRequest() (gas: 142119)
+### solved the above issue and continue with the main contract
