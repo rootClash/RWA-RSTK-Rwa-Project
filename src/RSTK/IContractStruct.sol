@@ -10,6 +10,11 @@ interface IContractStruct {
         MINT,
         BURN
     }
+    enum RequestForSource{
+        BUY,
+        CHECKBALANCE,
+        SELL
+    }
     struct Market {
         uint256 marketId;
         uint256 totalDeposited;
