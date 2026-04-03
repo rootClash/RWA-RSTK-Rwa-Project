@@ -7,12 +7,14 @@ interface IContractStruct {
         OPEN
     }
     enum RequestType {
+        NONE,
         MINT,
-        BURN
+        BURN,
+        DONE
     }
+
     enum RequestForSource{
         BUY,
-        CHECKBALANCE,
         SELL
     }
     struct Market {
@@ -22,21 +24,20 @@ interface IContractStruct {
     }
 
     struct Depositor {
-        uint256 priceId;
-        uint256 amountDeposited;
-        uint256 collateralPaid;
-        address depositorAddress;
         bool fullfilled;
-        RequestType requestType;
+        bytes32 priceId;
+        address depositorAddress;
+        uint256 amountToMint;
+        uint256 collateralPaid;
+        uint256 notionalAmount;
     }
 
     struct Redeemer {
-        uint256 priceId;
+        bool fullfilled;
+        bytes32 priceId;
+        address user;
         uint256 amountToTokenBurned;
         uint256 minCollateralExpected;
-        address user;
-        bool fullfilled;
-        RequestType requestType;
     }
 
     struct ExtraInfo {
