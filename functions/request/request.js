@@ -3,9 +3,9 @@ const requestConfig = require("../config/alpacaConfig.js");
 const { simulateScript, decodeResult, SubscriptionManager, SecretsManager, ResponseListener, ReturnType, FulfillmentCode } = require("@chainlink/functions-toolkit");
 require("@chainlink/env-enc").config();
 const ethers = require("ethers");
+const { fileURLToPath } = require("url");
 
 async function main() {
-    // all these are constants and remain fixed
     const rpcUrl = process.env.SEPOLIA_RPC_URL;
     const privateKey = process.env.PRIVATE_KEY;
     const routerAddr = "0xb83E47C2bC239B3bf370bc41e1459A34b41238D0"
@@ -14,8 +14,8 @@ async function main() {
         "https://01.functions-gateway.testnet.chain.link/",
         "https://02.functions-gateway.testnet.chain.link/",
     ];
-    const slotIdNumber = 0; // slot ID where to upload the secrets
-    const expirationTimeMinutes = 1240; // expiration time in minutes of the secrets
+    const slotIdNumber = 0; 
+    const expirationTimeMinutes = 1240; 
     console.log("Secrets type check:", typeof requestConfig.secrets);
     console.log("Secrets keys:", Object.keys(requestConfig.secrets));
     console.log("Secret values are strings?",
@@ -23,10 +23,11 @@ async function main() {
     );
     console.log("Started Execution...")
     const sourceArg = [
-        // { source: fs.readFileSync("./functions/source/source.js", "utf8"), args: [] },
-        // { source: fs.readFileSync("./functions/source/sourcePortfolio.js", "utf8"), args: [] },
-        // { source: fs.readFileSync("./functions/source/sourceBuy.js", "utf8"), args: ["56.84"] },
-        { source: fs.readFileSync("./functions/source/sourceSell.js", "utf8"), args: ["1"] },
+        { source: fs.readFileSync("./functions/source/source.js", "utf8"), args: [],fileType : "standard" },
+        { source: fs.readFileSync("./functions/source/sourcePortfolio.js", "utf8"), args: [],fileType : "standard" },
+        { source: fs.readFileSync("./functions/source/sourceBuy.js", "utf8"), args: ["56.84"] , fileType : "standard"},
+        { source: fs.readFileSync("./functions/source/sourceSell.js", "utf8"), args: ["1"],fileType : "standard" },
+        { source: fs.readFileSync("./functions/source/sourceMarketPhase.js", "utf8"), args: [] ,fileType : "abi"},
     ]
 
     const SimulationParameter = sourceArg.map(item =>
@@ -44,7 +45,23 @@ async function main() {
             console.log(result.capturedTerminalOutput);
             console.log("=== Response ===")
             if (result.responseBytesHexstring) {
-                console.log("Response (hexstring) : ", decodeResult(result.responseBytesHexstring, requestConfig.expectedReturnType).toString());
+                if(sourceArg[index].fileType === "abi") {
+                    const abiCoder = ethers.utils.defaultAbiCoder;
+                    const decoded = abiCoder.decode(
+                        ["bool", "uint256", "uint256"],
+                        result.responseBytesHexstring
+                    );
+
+                    const isOpen = decoded[0];
+                    const nextOpen = decoded[1].toNumber();           
+                    const nextClose = decoded[2].toNumber();
+
+                    console.log("Is market open:", isOpen);
+                    console.log("Next open:     ", nextOpen);
+                    console.log("Next close:    ", nextClose);
+                }else{
+                    console.log("Response (hexstring) : ", decodeResult(result.responseBytesHexstring, requestConfig.expectedReturnType).toString());
+                }
             }
         }
     })
@@ -60,7 +77,7 @@ async function main() {
     })
     await secretManager.initialize()
     const keys = await secretManager.fetchKeys()
-    console.log("full keys object:", JSON.stringify(keys)) // log the whole object
+    console.log("full keys object:", JSON.stringify(keys)) 
     console.log("public key after Sending the request", keys.donPublicKey)
     const encryptedSecretObj = await secretManager.encryptSecrets(requestConfig.secrets)
     console.log(
