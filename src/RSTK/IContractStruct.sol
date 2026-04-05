@@ -6,14 +6,21 @@ interface IContractStruct {
         CLOSED,
         OPEN
     }
+
+    enum RequestPhase {
+        NONE,
+        START,
+        PENDING,
+        DONE,
+        FAILED
+    }
     enum RequestType {
         NONE,
         MINT,
-        BURN,
-        DONE
+        BURN
     }
 
-    enum RequestForSource{
+    enum RequestForSource {
         BUY,
         SELL
     }
@@ -24,16 +31,17 @@ interface IContractStruct {
     }
 
     struct Depositor {
-        bool fullfilled;
+        bool redeemed;
         bytes32 priceId;
         address depositorAddress;
+        uint256 batchId;
         uint256 amountToMint;
-        uint256 collateralPaid;
+        uint256 collateralPaid; /// user ne etna pay kiya hai
         uint256 notionalAmount;
-    }
+    } //// etna use krna hai
 
     struct Redeemer {
-        bool fullfilled;
+        bool redeemed;
         bytes32 priceId;
         address user;
         uint256 amountToTokenBurned;
@@ -47,6 +55,7 @@ interface IContractStruct {
         address srstkTokenAddr;
         address priceOracleAddr;
         address portfolioContractAddr;
+        address marketPhaseContractAddr;
         address owner;
     }
 
@@ -56,7 +65,7 @@ interface IContractStruct {
         bytes[] bytesArgs;
     }
 
-     struct RequestData {
+    struct RequestData {
         uint8 donHostedSecretsSlotID;
         uint64 donHostedSecretsVersion;
         uint64 subscriptionId;
@@ -65,5 +74,4 @@ interface IContractStruct {
         address router;
         address accessControlAddress;
     }
-
 }
