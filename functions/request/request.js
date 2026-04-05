@@ -23,11 +23,11 @@ async function main() {
     );
     console.log("Started Execution...")
     const sourceArg = [
-        { source: fs.readFileSync("./functions/source/source.js", "utf8"), args: [],fileType : "standard" },
-        { source: fs.readFileSync("./functions/source/sourcePortfolio.js", "utf8"), args: [],fileType : "standard" },
-        { source: fs.readFileSync("./functions/source/sourceBuy.js", "utf8"), args: ["56.84"] , fileType : "standard"},
-        { source: fs.readFileSync("./functions/source/sourceSell.js", "utf8"), args: ["1"],fileType : "standard" },
-        { source: fs.readFileSync("./functions/source/sourceMarketPhase.js", "utf8"), args: [] ,fileType : "abi"},
+        { source: fs.readFileSync("./functions/source/source.js", "utf8"), args: [], returnType: ReturnType.uint256},
+        { source: fs.readFileSync("./functions/source/sourcePortfolio.js", "utf8"), args: [],returnType: ReturnType.uint256 },
+        { source: fs.readFileSync("./functions/source/sourceBuy.js", "utf8"), args: ["56.84"], returnType: ReturnType.string },
+        // { source: fs.readFileSync("./functions/source/sourceSell.js", "utf8"), args: ["1"],},
+        // { source: fs.readFileSync("./functions/source/sourceMarketPhase.js", "utf8"), args: [] ,fileType : "abi"},
     ]
 
     const SimulationParameter = sourceArg.map(item =>
@@ -60,7 +60,7 @@ async function main() {
                     console.log("Next open:     ", nextOpen);
                     console.log("Next close:    ", nextClose);
                 }else{
-                    console.log("Response (hexstring) : ", decodeResult(result.responseBytesHexstring, requestConfig.expectedReturnType).toString());
+                    console.log("Response (hexstring) : ", decodeResult(result.responseBytesHexstring, sourceArg[index].returnType).toString());
                 }
             }
         }

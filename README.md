@@ -49,3 +49,6 @@ solved this porblem 😄
 # error : encountered another problem ....
 [FAIL: SRSTK__InsufficientCollateral()] test_sendRequest() (gas: 142119)
 ### solved the above issue and continue with the main contract
+## working on the Redeem Token
+## finally completed the sendRequest , buyToken , redeemToken functions 
+##### now its time to add the sellToken . completed the sendBuyToken 

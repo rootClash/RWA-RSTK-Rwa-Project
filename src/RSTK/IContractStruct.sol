@@ -42,8 +42,9 @@ interface IContractStruct {
 
     struct Redeemer {
         bool redeemed;
-        bytes32 priceId;
         address user;
+        bytes32 priceId;
+        uint256 batchId;
         uint256 amountToTokenBurned;
         uint256 minCollateralExpected;
     }

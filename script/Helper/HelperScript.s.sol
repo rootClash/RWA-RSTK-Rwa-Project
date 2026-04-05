@@ -23,7 +23,7 @@ contract HelperScript is Script {
             (
                 s_networks[block.chainid],
                 s_configs[block.chainid]
-            ) = getAnvilConfig();
+            ) = getAnvilConfig(source);
         } else {
             revert HelperScript__InvalidNetwork();
         }
@@ -50,7 +50,7 @@ contract HelperScript is Script {
     {
         sepoliaConfig = IContractStruct.RequestData({
             donHostedSecretsSlotID: 0,
-            donHostedSecretsVersion: 1774182731,
+            donHostedSecretsVersion: 1775119765,
             subscriptionId: 6299,
             gasLimit: 300_000,
             donID: hex"66756e2d657468657265756d2d7365706f6c69612d3100000000000000000000",
@@ -64,7 +64,7 @@ contract HelperScript is Script {
         });
     }
 
-    function getAnvilConfig()
+    function getAnvilConfig(string memory source)
         public
         returns (
             IContractStruct.RequestData memory anvilConfig,
@@ -81,7 +81,7 @@ contract HelperScript is Script {
             donID: bytes32("fun-ethereum-sepolia-1")
         });
         config = IContractStruct.RequestConfig({
-            source: "./functions/sources/source.js",
+            source: source,
             args: new string[](0),
             bytesArgs: new bytes[](0)
         });

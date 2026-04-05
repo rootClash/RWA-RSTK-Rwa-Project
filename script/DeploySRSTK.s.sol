@@ -10,7 +10,7 @@ contract DeploySRSTK is Script {
     SRSTK public s_srstk;
     HelperScript public s_scriptPriceOracle;
     TokenScript public s_tokenScript;
-    function run(string memory source,address srstkTokenAddr,address priceOracleAddr,address portfolioContractAddr) public {
+    function run(string memory source,address srstkTokenAddr,address priceOracleAddr,address portfolioContractAddr,address usdcAddress,address marketPhaseContractAddr) public returns(SRSTK){
         s_scriptPriceOracle = new HelperScript(source);
         (IContractStruct.RequestData memory config  , )= s_scriptPriceOracle.getNetworkConfig();
         s_tokenScript = new TokenScript();
@@ -18,11 +18,15 @@ contract DeploySRSTK is Script {
         extraInfo.srstkTokenAddr = srstkTokenAddr;
         extraInfo.priceOracleAddr = priceOracleAddr;
         extraInfo.portfolioContractAddr = portfolioContractAddr;
+        extraInfo.usdc = usdcAddress;
+        extraInfo.marketPhaseContractAddr = marketPhaseContractAddr;
         vm.startBroadcast();
         s_srstk = new SRSTK(
             config,
             extraInfo
         );
         vm.stopBroadcast();
+        return s_srstk;
+    
     }
 }

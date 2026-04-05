@@ -38,10 +38,14 @@ contract SRSTK is FunctionsClient, ConfirmedOwner, IContractStruct {
     uint256 private s_portfolioBalance;
     uint256 private s_totalContractBalance;
     uint256 private s_depositedAmountUsedForBuy;
+    uint256 private s_redeemerAmountUsedForSell;
     uint256 private s_currentMintBatchId;
+    uint256 private s_currentBurnBatchId;
     mapping(bytes32 => uint256) private s_requestIdToBatchId;
     mapping(uint256 => bool) private s_batchMintFulfilled;
+    mapping(uint256 => bool) private s_batchBurnFulfilled;
     bytes32 private s_latestRequestId;
+    bytes32 private s_latestBurnRequestId;
     mapping(address => mapping(bytes32 => IContractStruct.Depositor))
         private s_depositorData;
     mapping(address => bytes32[]) private s_depositorIds;
@@ -94,7 +98,7 @@ contract SRSTK is FunctionsClient, ConfirmedOwner, IContractStruct {
     error SRSTK__TokenTranferToContractFailed();
     error SRSTK__UpkeepNotNeeded();
     error SRSTK__InvalidClientId();
-
+    error SSRSTK__TotalDepositedAndRedeemAmountIsZero();
     /*//////////////////////////////////////////////////////////////
                                 MODIFIERS
     //////////////////////////////////////////////////////////////*/
@@ -200,10 +204,11 @@ contract SRSTK is FunctionsClient, ConfirmedOwner, IContractStruct {
             redeemed: false,
             priceId: priceId,
             user: msg.sender,
+            batchId: s_currentBurnBatchId,
             amountToTokenBurned: amountOfTokenToBurn,
             minCollateralExpected: minCollateralExpected
         });
-
+        s_redeemerAmountUsedForSell += getLimitExposer(redeemer.minCollateralExpected);
         s_redeemerData[msg.sender][priceId] = redeemer;
         s_redmerIds[msg.sender].push(priceId);
 
@@ -226,7 +231,9 @@ contract SRSTK is FunctionsClient, ConfirmedOwner, IContractStruct {
         return priceId;
     }
 
-    function redeemUsdc() external {}
+    function redeemUsdc(bytes32 priceId , uint256 requestIdIndex) external {
+
+    }
 
     function redeemTokens(bytes32 priceId, uint256 requestIdIndex) external {
         /// CEI
@@ -399,7 +406,6 @@ contract SRSTK is FunctionsClient, ConfirmedOwner, IContractStruct {
 
         uint256 batchId = s_requestIdToBatchId[requestId];
         s_batchMintFulfilled[batchId] = true;
-
         emit ClientIdReceived(clientId, batchId);
     }
 
@@ -420,22 +426,30 @@ contract SRSTK is FunctionsClient, ConfirmedOwner, IContractStruct {
     }
 
     function performUpkeep(bytes calldata performData) external {
+        /// CEI
         (bool upkeepNeeded, ) = checkUpkeep(performData);
         if (!upkeepNeeded) {
             revert SRSTK__UpkeepNotNeeded();
         }
         // Double check to ensure we don't send empty requests
-        if (s_depositedAmountUsedForBuy == 0) {
-            revert SRSTK__AmountCannotBeZero();
+        if(s_depositedAmountUsedForBuy == 0 && s_redeemerAmountUsedForSell == 0){
+            revert SSRSTK__TotalDepositedAndRedeemAmountIsZero();
         }
-        
+        if()
         bytes32 requestId = buyStocks();
         s_latestRequestId = requestId;
-
         s_requestIdToBatchId[requestId] = s_currentMintBatchId;
         s_currentMintBatchId++; // Advance to the next batch for future depositors
         s_depositedAmountUsedForBuy = 0; // Reset the aggregator so we don't double-buy next upkeep!
         s_requestIdType[requestId] = IContractStruct.RequestType.MINT;
         s_requestPhase[requestId] = IContractStruct.RequestPhase.PENDING;
+
+        bytes32 burnRequestId = sellStocks();
+        s_latestBurnRequestId = burnRequestId;
+        s_requestIdToBatchId[burnRequestId] = s_currentBurnBatchId;
+        s_currentBurnBatchId++; // Advance to the next batch for future redeemers
+        s_redeemerAmountUsedForSell = 0; // Reset the aggregator so we don't double-sell next upkeep!
+        s_requestIdType[burnRequestId] = IContractStruct.RequestType.BURN;
+        s_requestPhase[burnRequestId] = IContractStruct.RequestPhase.PENDING;
     }
 }

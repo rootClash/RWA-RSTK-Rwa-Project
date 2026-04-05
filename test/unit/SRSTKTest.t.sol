@@ -32,6 +32,7 @@ contract SRSTKTest is Test {
     string public constant SOURCE = "./functions/source/sourcePortfolio.js";
     address public USER = makeAddr("user");
     address public alice = makeAddr("alice");
+    uint256 public userMinting = 1000 ether;
     function setUp() public {
         s_helperScript = new HelperScript(SOURCE);
         s_tokenScript = new TokenScript();
@@ -43,7 +44,7 @@ contract SRSTKTest is Test {
         s_rstkToken = new RSTKToken(s_requestData.accessControlAddress);
         vm.startPrank(s_extraInfo.owner);
         s_mockERC20 = new ERC20Mock();
-        s_mockERC20.mint(USER,100e18);
+        s_mockERC20.mint(USER,userMinting);
         vm.stopPrank();
         s_extraInfo.srstkTokenAddr = address(s_rstkToken);
         s_extraInfo.priceOracleAddr = address(s_priceOracle);
@@ -62,7 +63,7 @@ contract SRSTKTest is Test {
 
     function test_sendRequest() public {
         uint256 value = 150e6;
-        uint256 usdcValue = 1;
+        uint256 NoOfusdc = 1;
         // set the kyc agent
         vm.prank(s_extraInfo.owner);
         IRWAAccessControl(s_requestData.accessControlAddress).grantKYCAgentRole(alice);
@@ -70,20 +71,20 @@ contract SRSTKTest is Test {
         vm.warp(block.timestamp + 3600);
         /// alice set the price
         vm.prank(alice);
-        IPriceOracle(s_extraInfo.priceOracleAddr).setPrice(usdcValue);
+        IPriceOracle(s_extraInfo.priceOracleAddr).setPrice(NoOfusdc);
         /// user approved the amount
         vm.startPrank(USER);
-        IERC20(s_extraInfo.usdc).approve(address(s_srstk), value);
+        IERC20(s_extraInfo.usdc).approve(address(s_srstk), userMinting);
         uint256 minimumCollateral = s_srstk.minimumCollateralNeeded(1);
         console.log("Minimum collateral : " , minimumCollateral);
-        s_srstk.sendMintRequest(value);
+        bytes32 requestId = s_srstk.sendMintRequest(value);
+        bytes32[] memory userData  = s_srstk.getUserRequestIDs();
         vm.stopPrank();
-        uint256[] memory userData  = s_srstk.getUserRequestID(USER);
         for(uint256 i = 0; i < userData.length;i++){
-            console.log("User ",userData[i]);
+            console.logBytes32(userData[i]);
         }
-
-        assertEq(IPriceOracle(s_extraInfo.priceOracleAddr).getPrice(),usdcValue * 10 ** 8);
+        assert(userData.length > 0);
+        assertEq(IPriceOracle(s_extraInfo.priceOracleAddr).getPrice(),NoOfusdc * 10 ** 8);
         assertTrue(IRWAAccessControl(s_requestData.accessControlAddress).isKYCAgentRole(alice));
     }
 
